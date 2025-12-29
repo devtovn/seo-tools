@@ -1,4 +1,5 @@
 import asyncio
+import os
 from playwright_bot.browser import create_browser
 from playwright_bot.google_search_async import google_search
 from common.profile_manager import get_profile_for_keyword
@@ -24,8 +25,11 @@ async def main():
                 continue
 
             for kw in keywords:
-                profile = get_profile_for_keyword(kw)
-                playwright_p, context = await create_browser(profile, playwright_p)
+                profile_info = get_profile_for_keyword(kw)
+                print(f"[KEYWORD] {kw} -> Profile: {os.path.basename(profile_info['path'])} "
+                      f"-> Tỉnh: {profile_info['province']['name']}")
+                
+                playwright_p, context = await create_browser(profile_info, playwright_p)
                 page = await context.new_page()
 
                 try:

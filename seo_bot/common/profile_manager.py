@@ -2,15 +2,21 @@ import os
 import itertools
 import random
 import json
+import sys
 
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(CURR_DIR)
+sys.path.insert(0, BASE_DIR)
+
+from province_config import get_province_by_profile_number
+
 BASE_PROFILE_DIR = os.path.join(BASE_DIR, "seo_profiles")
 MAPPING_FILE = os.path.join(BASE_DIR, "profile_map.json")
 
+# Tạo 63 profiles tương ứng với 63 tỉnh thành Việt Nam
 _profiles = [
     os.path.join(BASE_PROFILE_DIR, f"profile_{i}")
-    for i in range(1, 10)
+    for i in range(1, 64)  # 63 profiles
 ]
 
 _profile_cycle = itertools.cycle(_profiles)
@@ -29,24 +35,46 @@ def _save_map(mapping):
         json.dump(mapping, fh, ensure_ascii=False, indent=2)
 
 
-def get_profile_for_keyword(keyword: str) -> str:
+def get_profile_for_keyword(keyword: str) -> dict:
+    """
+    Trả về dictionary chứa profile path và province info
+    """
     mapping = _load_map()
     if keyword in mapping and os.path.exists(mapping[keyword]):
-        return mapping[keyword]
-
-    existing = [p for p in _profiles if os.path.exists(p)]
-    if existing:
-        profile = random.choice(existing)
+        profile_path = mapping[keyword]
     else:
-        profile = random.choice(_profiles)
-        os.makedirs(profile, exist_ok=True)
+        existing = [p for p in _profiles if os.path.exists(p)]
+        if existing:
+            profile_path = random.choice(existing)
+        else:
+            profile_path = random.choice(_profiles)
+            os.makedirs(profile_path, exist_ok=True)
 
-    mapping[keyword] = profile
-    _save_map(mapping)
-    return profile
+        mapping[keyword] = profile_path
+        _save_map(mapping)
+    
+    # Lấy profile number từ path (ví dụ: profile_5 -> 5)
+    profile_number = int(os.path.basename(profile_path).split('_')[1])
+    province_info = get_province_by_profile_number(profile_number)
+    
+    return {
+        "path": profile_path,
+        "province": province_info
+    }
 
 
 def get_next_profile():
-    profile = next(_profile_cycle)
-    os.makedirs(profile, exist_ok=True)
-    return profile
+    """
+    Trả về dictionary chứa profile path và province info
+    """
+    profile_path = next(_profile_cycle)
+    os.makedirs(profile_path, exist_ok=True)
+    
+    # Lấy profile number từ path
+    profile_number = int(os.path.basename(profile_path).split('_')[1])
+    province_info = get_province_by_profile_number(profile_number)
+    
+    return {
+        "path": profile_path,
+        "province": province_info
+    }
