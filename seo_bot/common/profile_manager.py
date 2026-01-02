@@ -3,6 +3,7 @@ import itertools
 import random
 import json
 import sys
+import shutil
 
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(CURR_DIR)
@@ -78,3 +79,46 @@ def get_next_profile():
         "path": profile_path,
         "province": province_info
     }
+
+
+def get_random_profile_for_keyword(keyword: str) -> dict:
+    """
+    Random chọn 1 profile ngẫu nhiên cho keyword (không lưu vào mapping).
+    Mỗi lần gọi sẽ tạo profile mới với số ngẫu nhiên từ 1-63.
+    Trả về dictionary chứa profile path và province info.
+    """
+    # Random chọn profile number từ 1-63
+    profile_number = random.randint(1, 63)
+    profile_path = os.path.join(BASE_PROFILE_DIR, f"profile_{profile_number}")
+    
+    # Tạo profile directory nếu chưa tồn tại
+    os.makedirs(profile_path, exist_ok=True)
+    
+    # Lấy thông tin tỉnh thành
+    province_info = get_province_by_profile_number(profile_number)
+    
+    return {
+        "path": profile_path,
+        "province": province_info
+    }
+
+
+def delete_profile(profile_path: str):
+    """
+    Xóa profile directory và cập nhật mapping file nếu cần.
+    """
+    try:
+        if os.path.exists(profile_path):
+            shutil.rmtree(profile_path)
+            print(f"[DELETED] Profile: {os.path.basename(profile_path)}")
+        
+        # Xóa profile khỏi mapping file nếu có
+        mapping = _load_map()
+        keys_to_remove = [k for k, v in mapping.items() if v == profile_path]
+        for key in keys_to_remove:
+            del mapping[key]
+        
+        if keys_to_remove:
+            _save_map(mapping)
+    except Exception as e:
+        print(f"[ERROR] Failed to delete profile: {e}")

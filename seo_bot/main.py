@@ -2,7 +2,7 @@ import asyncio
 import os
 from playwright_bot.browser import create_browser
 from playwright_bot.google_search_async import google_search
-from common.profile_manager import get_profile_for_keyword
+from common.profile_manager import get_random_profile_for_keyword, delete_profile
 
 
 def load_keywords(isRandom: bool = False, path: str = "keywords.txt"):
@@ -25,7 +25,8 @@ async def main():
                 continue
 
             for kw in keywords:
-                profile_info = get_profile_for_keyword(kw)
+                # Random chọn 1 profile cho mỗi keyword
+                profile_info = get_random_profile_for_keyword(kw)
                 print(f"[KEYWORD] {kw} -> Profile: {os.path.basename(profile_info['path'])} "
                       f"-> Tỉnh: {profile_info['province']['name']}")
                 
@@ -41,6 +42,9 @@ async def main():
                         await context.close()
                     except Exception:
                         pass
+                    
+                    # Xóa profile sau khi chạy xong keyword
+                    delete_profile(profile_info['path'])
 
             await asyncio.sleep(1)
     finally:
