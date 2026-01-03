@@ -1,0 +1,9 @@
+# Ignore everything
+*
+
+# But do not ignore .gitignore itself
+!.gitignore
+
+# Do not ignore .py files
+!*.py
+
