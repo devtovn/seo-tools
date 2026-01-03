@@ -57,3 +57,21 @@ DETAIL_SCROLL_UP_SPEED_FACTOR = 0.1
 # =========================
 RESULT_DIR = os.path.join(BASE_DIR, "results")
 os.makedirs(RESULT_DIR, exist_ok=True)
+
+# =========================
+# SEARCH TIMING
+# =========================
+# Random start time range
+START_TIME_HOUR_MIN = 6  # 6 AM
+START_TIME_HOUR_MAX = 22  # 10 PM
+START_TIME_MINUTE_MIN = 1
+START_TIME_MINUTE_MAX = 59
+
+# Break interval settings
+# Number of keywords before taking a break
+KEYWORDS_BEFORE_BREAK_MIN = 1
+KEYWORDS_BEFORE_BREAK_MAX = 25
+
+# Break duration in minutes
+BREAK_DURATION_MIN = 15
+BREAK_DURATION_MAX = 35
