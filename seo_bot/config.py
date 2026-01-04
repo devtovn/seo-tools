@@ -61,16 +61,22 @@ os.makedirs(RESULT_DIR, exist_ok=True)
 # =========================
 # SEARCH TIMING
 # =========================
+# Startup delay (seconds)
+STARTUP_DELAY_SECONDS = 5  # Delay before first run on startup
+
 # Random start time range
 START_TIME_HOUR_MIN = 6  # 6 AM
 START_TIME_HOUR_MAX = 22  # 10 PM
 START_TIME_MINUTE_MIN = 1
 START_TIME_MINUTE_MAX = 59
 
+# First start time of the day limit (must be before this hour)
+FIRST_START_MAX_HOUR = 7  # First run of each day must start before 7 AM
+
 # Break interval settings
 # Number of keywords before taking a break
-KEYWORDS_BEFORE_BREAK_MIN = 1
-KEYWORDS_BEFORE_BREAK_MAX = 25
+KEYWORDS_BEFORE_BREAK_MIN = 20
+KEYWORDS_BEFORE_BREAK_MAX = 45
 
 # Break duration in minutes
 BREAK_DURATION_MIN = 15

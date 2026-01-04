@@ -9,7 +9,8 @@ from config import (
     START_TIME_HOUR_MIN, START_TIME_HOUR_MAX,
     START_TIME_MINUTE_MIN, START_TIME_MINUTE_MAX,
     KEYWORDS_BEFORE_BREAK_MIN, KEYWORDS_BEFORE_BREAK_MAX,
-    BREAK_DURATION_MIN, BREAK_DURATION_MAX
+    BREAK_DURATION_MIN, BREAK_DURATION_MAX,
+    FIRST_START_MAX_HOUR, STARTUP_DELAY_SECONDS
 )
 
 
@@ -24,10 +25,22 @@ def load_keywords(isRandom: bool = False, path: str = "keywords.txt"):
     return kws
 
 
-def get_random_start_time():
-    """Generate a random start time between 6:xx AM and 22:yy PM"""
-    hour = random.randint(START_TIME_HOUR_MIN, START_TIME_HOUR_MAX)
-    minute = random.randint(START_TIME_MINUTE_MIN, START_TIME_MINUTE_MAX)
+def get_random_start_time(is_first_of_day=False):
+    """Generate a random start time
+    If is_first_of_day=True: time will be between START_TIME_HOUR_MIN and FIRST_START_MAX_HOUR
+    Otherwise: between START_TIME_HOUR_MIN and START_TIME_HOUR_MAX
+    """
+    if is_first_of_day:
+        # First start of the day: must be before FIRST_START_MAX_HOUR
+        max_hour = FIRST_START_MAX_HOUR - 1  # e.g., if FIRST_START_MAX_HOUR=7, max_hour=6
+        hour = random.randint(START_TIME_HOUR_MIN, max_hour)
+        if hour == max_hour:
+            minute = random.randint(START_TIME_MINUTE_MIN, 59)
+        else:
+            minute = random.randint(START_TIME_MINUTE_MIN, START_TIME_MINUTE_MAX)
+    else:
+        hour = random.randint(START_TIME_HOUR_MIN, START_TIME_HOUR_MAX)
+        minute = random.randint(START_TIME_MINUTE_MIN, START_TIME_MINUTE_MAX)
     return time(hour, minute)
 
 
@@ -55,16 +68,52 @@ async def wait_until_start_time(target_time):
 
 async def main():
     playwright_p = None
-    is_first_run = True
+    last_start_datetime = None
+    current_date = None
+    is_first_startup = True
     try:
         while True:
-            # Skip waiting on first run, wait for random start time on subsequent runs
-            if is_first_run:
-                print("[TIMING] Starting immediately on first run...")
-                is_first_run = False
+            now = datetime.now()
+            
+            # First startup: run after STARTUP_DELAY_SECONDS
+            if is_first_startup:
+                print(f"[TIMING] First startup, will run after {STARTUP_DELAY_SECONDS} seconds...")
+                await asyncio.sleep(STARTUP_DELAY_SECONDS)
+                is_first_startup = False
+                current_date = now.date()
+                last_start_datetime = datetime.now()
+            # Check if it's a new day
+            elif current_date is None or current_date != now.date():
+                # First run of the day: schedule before FIRST_START_MAX_HOUR
+                current_date = now.date()
+                start_time = get_random_start_time(is_first_of_day=True)
+                target_datetime = datetime.combine(now.date(), start_time)
+                
+                # If already past FIRST_START_MAX_HOUR today, schedule for tomorrow
+                if now.time() >= time(FIRST_START_MAX_HOUR, 0):
+                    target_datetime += timedelta(days=1)
+                    current_date = target_datetime.date()
+                
+                print(f"[TIMING] First run of the day, waiting until {target_datetime.strftime('%Y-%m-%d %H:%M')}...")
+                await wait_until_start_time(start_time if now.date() == target_datetime.date() else start_time)
+                last_start_datetime = target_datetime
             else:
-                start_time = get_random_start_time()
-                await wait_until_start_time(start_time)
+                # Subsequent runs: must be after previous start + break duration
+                break_minutes = random.randint(BREAK_DURATION_MIN, BREAK_DURATION_MAX)
+                next_start_datetime = last_start_datetime + timedelta(minutes=break_minutes)
+                
+                # If next start is on a different day, reset to first of day logic
+                if next_start_datetime.date() != current_date:
+                    current_date = next_start_datetime.date()
+                    start_time = get_random_start_time(is_first_of_day=True)
+                    next_start_datetime = datetime.combine(next_start_datetime.date(), start_time)
+                
+                wait_seconds = (next_start_datetime - datetime.now()).total_seconds()
+                if wait_seconds > 0:
+                    print(f"[TIMING] Next run scheduled at {next_start_datetime.strftime('%Y-%m-%d %H:%M')} (after {break_minutes} min break)...")
+                    await asyncio.sleep(wait_seconds)
+                
+                last_start_datetime = next_start_datetime
             
             # Get random break settings
             keywords_before_break, break_duration = get_random_break_settings()
