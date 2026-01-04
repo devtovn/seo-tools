@@ -6,4 +6,5 @@
 
 # Do not ignore .py files
 !*.py
-
+# Do not ignore .txt files
+!*.txt
